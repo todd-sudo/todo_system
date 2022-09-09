@@ -1,0 +1,70 @@
+
+version: "3"
+
+services:
+
+  backend:
+    env_file:
+      - ./.envs/.production/.app
+    ports:
+     - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - todo_network
+ 
+    build:
+      context: .
+      dockerfile: ./compose/go/Dockerfile
+    volumes:
+      - .:/go/src/app
+
+    command: ["go", "run", "/go/src/app/app/cmd/main/main.go"]
+
+  db:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: todo_system_pg_production
+    command: postgres -c 'max_connections=1000'
+    volumes:
+      - production_postgres_data:/var/lib/postgresql/data:Z
+      - production_postgres_data_backups:/backups:z
+    env_file:
+      - ./.envs/.production/.postgres
+
+  traefik:
+    build:
+      context: .
+      dockerfile: ./compose/traefik/Dockerfile
+    image: production_traefik
+    depends_on:
+      - backend
+    volumes:
+      - production_traefik:/etc/traefik/acme:z
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      # - "0.0.0.0:5555:5555"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:5050"
+    depends_on:
+      - db
+    env_file:
+      - ./.envs/.production/.postgres
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - todo_network
+
+volumes:
+  production_postgres_data: {}
+  production_postgres_data_backups: {}
+  pgadmin-data: {}
+  production_traefik: {}
+
+networks:
+  todo_network:

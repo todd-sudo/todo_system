@@ -1,0 +1,3 @@
+GIN_MODE=debug
+SERVER_PORT=8000
+
