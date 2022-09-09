@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,16 +60,15 @@ func RunApplication() {
 	handlers := handler.NewHandler(log, *cfg, services)
 	log.Info("Connect services handlers!")
 
-	r := gin.New()
-	// gin logger
-	// if cfg.App.UseGinLogger {
-	// 	allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
-	// 	if err != nil {
-	// 		panic(fmt.Sprintf("[Message]: %s", err))
-	// 	}
-	// 	gin.DefaultWriter = io.MultiWriter(allFile)
-	// 	r.Use(gin.Logger())
-	// }
+	router := gin.New()
+
+	allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
+	if err != nil {
+		panic(fmt.Sprintf("[Message]: %s", err))
+	}
+	gin.DefaultWriter = io.MultiWriter(allFile)
+	router.Use(gin.Logger())
+
 	c := cors.New(cors.Options{
 		AllowedMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodOptions, http.MethodDelete},
 		AllowedOrigins:     []string{"http://localhost:8000", "http://localhost:8080"},
@@ -79,7 +80,7 @@ func RunApplication() {
 		Debug: false,
 	})
 
-	handler := c.Handler(handlers.InitRoutes(r))
+	handler := c.Handler(handlers.InitRoutes(router))
 
 	srv := server.NewServer(cfg.Listen.Port, handler)
 
