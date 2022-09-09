@@ -1,9 +1,7 @@
 package main
 
-import (
-	"fmt"
-)
+import "github.com/todd-sudo/todo_system/internal/app"
 
 func main() {
-	fmt.Println("Working!")
+	app.RunApplication()
 }
