@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type Repository struct {
+type Storage struct {
 }
 
-func NewRepository(ctx context.Context, db *gorm.DB, log logging.Logger) *Repository {
-	return &Repository{
+func NewStorage(ctx context.Context, db *gorm.DB, log logging.Logger) *Storage {
+	return &Storage{
 		// City: NewCityRepository(ctx, db, log),
 		// Shop: NewShopRepository(ctx, db, log),
 	}

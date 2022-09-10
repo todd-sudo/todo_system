@@ -15,9 +15,9 @@ import (
 	"github.com/rs/cors"
 	"github.com/todd-sudo/todo_system/internal/config"
 	database "github.com/todd-sudo/todo_system/internal/db/postgres"
-	"github.com/todd-sudo/todo_system/internal/handler"
-	"github.com/todd-sudo/todo_system/internal/repository"
+	apiV1 "github.com/todd-sudo/todo_system/internal/handler/v1/http"
 	"github.com/todd-sudo/todo_system/internal/service"
+	pgStorage "github.com/todd-sudo/todo_system/internal/storage/postgres"
 	"github.com/todd-sudo/todo_system/pkg/logging"
 	"github.com/todd-sudo/todo_system/pkg/server"
 )
@@ -47,13 +47,13 @@ func RunApplication() {
 	}
 	log.Infoln("Connect database successfully!")
 
-	repositories := repository.NewRepository(ctx, db, log)
+	repositories := pgStorage.NewStorage(ctx, db, log)
 	log.Info("Connect repositories successfully!")
 
 	services := service.NewService(ctx, *repositories, log)
 	log.Info("Connect services successfully!")
 
-	handlers := handler.NewHandler(log, *cfg, services)
+	handlers := apiV1.NewHandler(log, *cfg, services)
 	log.Info("Connect services handlers!")
 
 	// New Gin router
@@ -88,7 +88,7 @@ func RunApplication() {
 }
 
 // initRoutesAndCORS инициализирует роутер и обработчики
-func initRoutesAndCORS(router *gin.Engine, handlers *handler.Handler) http.Handler {
+func initRoutesAndCORS(router *gin.Engine, handlers *apiV1.Handler) http.Handler {
 	c := cors.New(cors.Options{
 		AllowedMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodOptions, http.MethodDelete},
 		AllowedOrigins:     []string{"http://localhost:8000", "http://localhost:8080"},
