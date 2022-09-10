@@ -23,20 +23,24 @@ import (
 )
 
 func RunApplication() {
+	// Init Logger
 	logging.Init()
 	log := logging.GetLogger()
 	log.Infoln("Connect logger successfully!")
 
+	// Init Config
 	cfg := config.GetConfig()
 	log.Infoln("Connect config successfully!")
 
+	// Init Gin Mode
 	gin.SetMode(cfg.AppConfig.GinMode)
 
+	// Init Context
 	const timeout = 5 * time.Second
-
 	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
 	defer shutdown()
 
+	// Init Database
 	db, err := database.NewPostgresDB(cfg, &log)
 	if err != nil {
 		log.Panicln(err)
@@ -52,30 +56,17 @@ func RunApplication() {
 	handlers := handler.NewHandler(log, *cfg, services)
 	log.Info("Connect services handlers!")
 
+	// New Gin router
 	router := gin.New()
 
-	allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
-	if err != nil {
-		panic(fmt.Sprintf("[Message]: %s", err))
-	}
-	gin.DefaultWriter = io.MultiWriter(allFile)
-	router.Use(gin.Logger())
+	// Gin Logs
+	enableGinLogs(true, router)
 
-	c := cors.New(cors.Options{
-		AllowedMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodOptions, http.MethodDelete},
-		AllowedOrigins:     []string{"http://localhost:8000", "http://localhost:8080"},
-		AllowCredentials:   true,
-		AllowedHeaders:     []string{"Location", "Charset", "Access-Control-Allow-Origin", "Content-Type", "content-type", "Origin", "Accept", "Content-Length", "Accept-Encoding", "X-CSRF-Token"},
-		OptionsPassthrough: true,
-		ExposedHeaders:     []string{"Location", "Authorization", "Content-Disposition"},
-		// Enable Debugging for testing, consider disabling in production
-		Debug: false,
-	})
+	// Init Routes and CORS
+	handler := initRoutesAndCORS(router, handlers)
 
-	handler := c.Handler(handlers.InitRoutes(router))
-
+	// Start HTTP Server
 	srv := server.NewServer(cfg.Listen.Port, handler)
-
 	go func() {
 		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {
 			panic("error occurred while running http server: " + err.Error())
@@ -94,5 +85,33 @@ func RunApplication() {
 	if err := srv.Stop(ctx); err != nil {
 		log.Errorf("failed to stop server: %v", err)
 	}
+}
 
+// initRoutesAndCORS инициализирует роутер и обработчики
+func initRoutesAndCORS(router *gin.Engine, handlers *handler.Handler) http.Handler {
+	c := cors.New(cors.Options{
+		AllowedMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodOptions, http.MethodDelete},
+		AllowedOrigins:     []string{"http://localhost:8000", "http://localhost:8080"},
+		AllowCredentials:   true,
+		AllowedHeaders:     []string{"Location", "Charset", "Access-Control-Allow-Origin", "Content-Type", "content-type", "Origin", "Accept", "Content-Length", "Accept-Encoding", "X-CSRF-Token"},
+		OptionsPassthrough: true,
+		ExposedHeaders:     []string{"Location", "Authorization", "Content-Disposition"},
+		// Enable Debugging for testing, consider disabling in production
+		Debug: false,
+	})
+
+	handler := c.Handler(handlers.InitRoutes(router))
+	return handler
+}
+
+// enableGinLogs включает/отключает gin логи
+func enableGinLogs(enable bool, router *gin.Engine) {
+	if enable {
+		allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
+		if err != nil {
+			panic(fmt.Sprintf("[Message]: %s", err))
+		}
+		gin.DefaultWriter = io.MultiWriter(allFile)
+		router.Use(gin.Logger())
+	}
 }
