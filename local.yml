@@ -19,19 +19,19 @@ services:
     volumes:
       - .:/go/src/app
 
-    command: ["go", "run", "/go/src/app/app/cmd/main/main.go"]
+    command: ["/app/app/bin/app"]
 
   db:
     build:
       context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
+      dockerfile: ./compose/postgres/Dockerfile
     image: todo_system_pg
-    command: postgres -c 'max_connections=1000'
+    command: postgres -c 'max_connections=10000'
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
       - production_postgres_data_backups:/backups:z
     env_file:
-      - ./.envs/.local/.postgres
+      - ./.envs/.local/.app
 
   pgadmin:
     image: dpage/pgadmin4
@@ -40,7 +40,7 @@ services:
     depends_on:
       - db
     env_file:
-      - ./.envs/.local/.postgres
+      - ./.envs/.local/.app
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     networks:

@@ -9,11 +9,10 @@ import (
 
 type Config struct {
 	Listen struct {
-		BindIP string `env:"BIND_IP" env-default:"0.0.0.0"`
-		Port   string `env:"PORT" env-default:"10000"`
+		BindIP string `env:"BIND_IP" env-default:"127.0.0.1"`
+		Port   string `env:"SERVER_PORT" env-default:"8000"`
 	}
 	AppConfig struct {
-		LogLevel  string `env:"LOG_LEVEL" env-default:"trace"`
 		GinMode   string `env:"GIN_MODE" env-default:"debug"`
 		AdminUser struct {
 			Username string `env:"ADMIN_USERNAME" env-default:"admin"`
@@ -39,7 +38,7 @@ func GetConfig() *Config {
 		instance = &Config{}
 
 		if err := cleanenv.ReadEnv(instance); err != nil {
-			helpText := "The Art of Development - Monolith Notes System"
+			helpText := "Go-rshok todo system"
 			help, _ := cleanenv.GetDescription(instance, &helpText)
 			log.Print(help)
 			log.Fatal(err)

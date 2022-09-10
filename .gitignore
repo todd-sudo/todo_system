@@ -332,6 +332,8 @@ mkn_service/media/
 
 .pytest_cache/
 .ipython/
+
+cmd/
 .env
 .envs/*
 !.envs/.local/
