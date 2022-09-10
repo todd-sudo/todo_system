@@ -22,14 +22,6 @@ import (
 	"github.com/todd-sudo/todo_system/pkg/server"
 )
 
-// logger.Println("swagger docs initializing")
-// router.Handler(http.MethodGet, "/swagger", http.RedirectHandler("/swagger/index.html", http.StatusMovedPermanently))
-// router.Handler(http.MethodGet, "/swagger/*any", httpSwagger.WrapHandler)
-
-// logger.Println("heartbeat metric initializing")
-// metricHandler := metric.Handler{}
-// metricHandler.Register(router)
-
 func RunApplication() {
 	logging.Init()
 	log := logging.GetLogger()
@@ -104,38 +96,3 @@ func RunApplication() {
 	}
 
 }
-
-// 	c := cors.New(cors.Options{
-// 		AllowedMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodOptions, http.MethodDelete},
-// 		AllowedOrigins:     []string{"http://localhost:3000", "http://localhost:8080"},
-// 		AllowCredentials:   true,
-// 		AllowedHeaders:     []string{"Location", "Charset", "Access-Control-Allow-Origin", "Content-Type", "content-type", "Origin", "Accept", "Content-Length", "Accept-Encoding", "X-CSRF-Token"},
-// 		OptionsPassthrough: true,
-// 		ExposedHeaders:     []string{"Location", "Authorization", "Content-Disposition"},
-// 		// Enable Debugging for testing, consider disabling in production
-// 		Debug: false,
-// 	})
-
-// 	handler := c.Handler(a.router)
-
-// 	a.httpServer = &http.Server{
-// 		Handler:      handler,
-// 		WriteTimeout: 15 * time.Second,
-// 		ReadTimeout:  15 * time.Second,
-// 	}
-
-// 	a.logger.Println("application completely initialized and started")
-
-// 	if err := a.httpServer.Serve(listener); err != nil {
-// 		switch {
-// 		case errors.Is(err, http.ErrServerClosed):
-// 			a.logger.Warn("server shutdown")
-// 		default:
-// 			a.logger.Fatal(err)
-// 		}
-// 	}
-// 	err := a.httpServer.Shutdown(context.Background())
-// 	if err != nil {
-// 		a.logger.Fatal(err)
-// 	}
-// }
