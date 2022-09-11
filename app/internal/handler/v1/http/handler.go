@@ -22,6 +22,7 @@ func NewHandler(log logging.Logger, cfg config.Config, service *service.Service)
 }
 
 func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
-
+	// var c *gin.Context
+	// c.SetCookie()
 	return r
 }
