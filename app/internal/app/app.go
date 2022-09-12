@@ -15,6 +15,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/todd-sudo/todo_system/internal/config"
 	database "github.com/todd-sudo/todo_system/internal/db/postgres"
+	"github.com/todd-sudo/todo_system/internal/db/redis"
 	apiV1 "github.com/todd-sudo/todo_system/internal/handler/v1/http"
 	"github.com/todd-sudo/todo_system/internal/service"
 	pgStorage "github.com/todd-sudo/todo_system/internal/storage/postgres"
@@ -23,6 +24,11 @@ import (
 )
 
 func RunApplication() {
+	// Init Context
+	const timeout = 5 * time.Second
+	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
+	defer shutdown()
+
 	// Init Logger
 	logging.Init()
 	log := logging.GetLogger()
@@ -32,13 +38,19 @@ func RunApplication() {
 	cfg := config.GetConfig()
 	log.Infoln("Connect config successfully!")
 
+	// connect to redis
+	rc, err := redis.NewRedisClient(
+		ctx,
+		&redis.CredentialRedis{Host: cfg.Redis.Host, Port: cfg.Redis.Port},
+		log,
+	).ConnectToRedis()
+	if err != nil {
+		log.Panicln("error connecting to redis %w", err)
+	}
+	log.Infoln("Connect redis successfully!")
+
 	// Init Gin Mode
 	gin.SetMode(cfg.AppConfig.GinMode)
-
-	// Init Context
-	const timeout = 5 * time.Second
-	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
-	defer shutdown()
 
 	// Init Database
 	db, err := database.NewPostgresDB(cfg, &log)
@@ -47,14 +59,14 @@ func RunApplication() {
 	}
 	log.Infoln("Connect database successfully!")
 
-	repositories := pgStorage.NewStorage(ctx, db, log)
-	log.Info("Connect repositories successfully!")
+	repositories := pgStorage.NewStorage(ctx, db, log, rc)
+	log.Infoln("Connect repositories successfully!")
 
-	services := service.NewService(ctx, *repositories, log)
-	log.Info("Connect services successfully!")
+	services := service.NewService(ctx, *repositories, log, rc)
+	log.Infoln("Connect services successfully!")
 
 	handlers := apiV1.NewHandler(log, *cfg, services)
-	log.Info("Connect services handlers!")
+	log.Infoln("Connect services handlers!")
 
 	// New Gin router
 	router := gin.New()
@@ -69,10 +81,10 @@ func RunApplication() {
 	srv := server.NewServer(cfg.Listen.Port, handler)
 	go func() {
 		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {
-			panic("error occurred while running http server: " + err.Error())
+			log.Panicln("error occurred while running http server: " + err.Error())
 		}
 	}()
-	log.Info("Server started on http://" + cfg.Listen.BindIP + ":" + cfg.Listen.Port)
+	log.Infoln("Server started on http://" + cfg.Listen.BindIP + ":" + cfg.Listen.Port)
 
 	// Graceful Shutdown
 	quit := make(chan os.Signal, 1)
@@ -83,7 +95,11 @@ func RunApplication() {
 	log.Info("Server stopped")
 
 	if err := srv.Stop(ctx); err != nil {
-		log.Errorf("failed to stop server: %v", err)
+		log.Panicf("failed to stop server: %v\n", err)
+	}
+
+	if err := rc.Close(); err != nil {
+		log.Panicf("error closing Redis Client: %w\n", err)
 	}
 }
 
