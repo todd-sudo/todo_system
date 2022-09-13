@@ -17,6 +17,7 @@ import (
 	database "github.com/todd-sudo/todo_system/internal/db/postgres"
 	"github.com/todd-sudo/todo_system/internal/db/redis"
 	apiV1 "github.com/todd-sudo/todo_system/internal/handler/v1/http"
+	"github.com/todd-sudo/todo_system/internal/hasher"
 	"github.com/todd-sudo/todo_system/internal/service"
 	pgStorage "github.com/todd-sudo/todo_system/internal/storage/postgres"
 	"github.com/todd-sudo/todo_system/pkg/logging"
@@ -59,10 +60,14 @@ func RunApplication() {
 	}
 	log.Infoln("Connect database successfully!")
 
-	repositories := pgStorage.NewStorage(ctx, db, log, rc)
+	// Init hasher password
+	hasher := hasher.NewSHA1Hasher(cfg.AppConfig.Auth.PasswordHashSalt)
+	log.Infoln("Connect hasher successfully!")
+
+	storages := pgStorage.NewStorage(ctx, db, log)
 	log.Infoln("Connect repositories successfully!")
 
-	services := service.NewService(ctx, *repositories, log, rc)
+	services := service.NewService(ctx, *storages, log, hasher, rc)
 	log.Infoln("Connect services successfully!")
 
 	handlers := apiV1.NewHandler(log, *cfg, services)

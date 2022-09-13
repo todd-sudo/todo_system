@@ -18,6 +18,9 @@ type Config struct {
 			Username string `env:"ADMIN_USERNAME" env-default:"admin"`
 			Password string `env:"ADMIN_PWD" env-default:"admin"`
 		}
+		Auth struct {
+			PasswordHashSalt string `env:"PASSWORD_HASH_SALT" env-required:"true"`
+		}
 	}
 	PostgreSQL struct {
 		Username string `env:"POSTGRES_USER" env-required:"true"`
