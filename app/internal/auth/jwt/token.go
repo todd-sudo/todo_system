@@ -6,9 +6,29 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/todd-sudo/todo_system/internal/config"
+	"github.com/todd-sudo/todo_system/pkg/logging"
 )
 
-func CreateToken(ttl time.Duration, payload interface{}, privateKey string) (string, error) {
+type JWTToken interface {
+	CreateToken(ttl time.Duration, payload interface{}, privateKey string) (string, error)
+	ValidateToken(token string, publicKey string) (interface{}, error)
+}
+
+type jwtToken struct {
+	log logging.Logger
+	cfg config.Config
+}
+
+func NewJWTToken(log logging.Logger, cfg config.Config) JWTToken {
+	return &jwtToken{
+		log: log,
+		cfg: cfg,
+	}
+}
+
+// CreateToken - create JWT token
+func (j *jwtToken) CreateToken(ttl time.Duration, payload interface{}, privateKey string) (string, error) {
 	decodedPrivateKey, err := base64.StdEncoding.DecodeString(privateKey)
 	if err != nil {
 		return "", fmt.Errorf("could not decode key: %w", err)
@@ -35,7 +55,8 @@ func CreateToken(ttl time.Duration, payload interface{}, privateKey string) (str
 	return token, nil
 }
 
-func ValidateToken(token string, publicKey string) (interface{}, error) {
+// ValidateToken - validate JWT token
+func (j *jwtToken) ValidateToken(token string, publicKey string) (interface{}, error) {
 	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode: %w", err)

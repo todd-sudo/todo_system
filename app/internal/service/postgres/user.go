@@ -1,4 +1,4 @@
-package service
+package service_pg
 
 import (
 	"context"

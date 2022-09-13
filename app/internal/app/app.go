@@ -18,7 +18,7 @@ import (
 	"github.com/todd-sudo/todo_system/internal/db/redis"
 	apiV1 "github.com/todd-sudo/todo_system/internal/handler/v1/http"
 	"github.com/todd-sudo/todo_system/internal/hasher"
-	"github.com/todd-sudo/todo_system/internal/service"
+	service_pg "github.com/todd-sudo/todo_system/internal/service/postgres"
 	pgStorage "github.com/todd-sudo/todo_system/internal/storage/postgres"
 	"github.com/todd-sudo/todo_system/pkg/logging"
 	"github.com/todd-sudo/todo_system/pkg/server"
@@ -67,10 +67,10 @@ func RunApplication() {
 	storages := pgStorage.NewStorage(ctx, db, log)
 	log.Infoln("Connect repositories successfully!")
 
-	services := service.NewService(ctx, *storages, log, hasher, rc)
+	servicesPG := service_pg.NewService(ctx, *storages, log, hasher)
 	log.Infoln("Connect services successfully!")
 
-	handlers := apiV1.NewHandler(log, *cfg, services)
+	handlers := apiV1.NewHandler(log, *cfg, servicesPG)
 	log.Infoln("Connect services handlers!")
 
 	// New Gin router

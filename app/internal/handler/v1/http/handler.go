@@ -3,17 +3,17 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/todd-sudo/todo_system/internal/config"
-	"github.com/todd-sudo/todo_system/internal/service"
+	service_pg "github.com/todd-sudo/todo_system/internal/service/postgres"
 	"github.com/todd-sudo/todo_system/pkg/logging"
 )
 
 type Handler struct {
-	service *service.Service
+	service *service_pg.Service
 	cfg     config.Config
 	log     logging.Logger
 }
 
-func NewHandler(log logging.Logger, cfg config.Config, service *service.Service) *Handler {
+func NewHandler(log logging.Logger, cfg config.Config, service *service_pg.Service) *Handler {
 	return &Handler{
 		service: service,
 		cfg:     cfg,
@@ -23,7 +23,7 @@ func NewHandler(log logging.Logger, cfg config.Config, service *service.Service)
 
 func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
 	// var c *gin.Context
-	// c.SetSameSite(http.SameSiteStrictMode)
+	// // c.SetSameSite(http.SameSiteStrictMode)
 	// c.SetCookie()
 	return r
 }

@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -20,6 +21,16 @@ type Config struct {
 		}
 		Auth struct {
 			PasswordHashSalt string `env:"PASSWORD_HASH_SALT" env-required:"true"`
+		}
+		JWTToken struct {
+			AccessTokenPrivateKey  string        `env:"ACCESS_TOKEN_PRIVATE_KEY" env-required:"true"`
+			AccessTokenPublicKey   string        `env:"ACCESS_TOKEN_PUBLIC_KEY" env-required:"true"`
+			RefreshTokenPrivateKey string        `env:"REFRESH_TOKEN_PRIVATE_KEY" env-required:"true"`
+			RefreshTokenPublicKey  string        `env:"REFRESH_TOKEN_PUBLIC_KEY" env-required:"true"`
+			AccessTokenExpiresIn   time.Duration `env:"ACCESS_TOKEN_EXPIRED_IN" env-required:"true"`
+			RefreshTokenExpiresIn  time.Duration `env:"REFRESH_TOKEN_EXPIRED_IN" env-required:"true"`
+			AccessTokenMaxAge      int           `env:"ACCESS_TOKEN_MAXAGE" env-required:"true"`
+			RefreshTokenMaxAge     int           `env:"REFRESH_TOKEN_MAXAGE" env-required:"true"`
 		}
 	}
 	PostgreSQL struct {
