@@ -25,10 +25,6 @@ import (
 )
 
 func RunApplication() {
-	// Init Context
-	const timeout = 5 * time.Second
-	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
-	defer shutdown()
 
 	// Init Logger
 	logging.Init()
@@ -38,6 +34,11 @@ func RunApplication() {
 	// Init Config
 	cfg := config.GetConfig()
 	log.Infoln("Connect config successfully!")
+
+	// Init Context
+	const timeout = 5 * time.Second
+	ctx, shutdown := context.WithTimeout(context.Background(), timeout)
+	defer shutdown()
 
 	// connect to redis
 	rc, err := redis.NewRedisClient(
@@ -112,7 +113,7 @@ func RunApplication() {
 func initRoutesAndCORS(router *gin.Engine, handlers *apiV1.Handler) http.Handler {
 	c := cors.New(cors.Options{
 		AllowedMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodOptions, http.MethodDelete},
-		AllowedOrigins:     []string{"http://localhost:8000", "http://localhost:8080"},
+		AllowedOrigins:     []string{"http://127.0.0.1:8000", "http://127.0.0.1:8000", "http://localhost:8000"},
 		AllowCredentials:   true,
 		AllowedHeaders:     []string{"Location", "Charset", "Access-Control-Allow-Origin", "Content-Type", "content-type", "Origin", "Accept", "Content-Length", "Accept-Encoding", "X-CSRF-Token"},
 		OptionsPassthrough: true,
