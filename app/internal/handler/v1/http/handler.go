@@ -24,10 +24,13 @@ func NewHandler(log logging.Logger, cfg config.Config, service *service_pg.Servi
 func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
 
 	api := r.Group("api/")
-	auth := api.Group("auth/")
 	{
-		auth.POST("register", h.RegisterHandler)
-		// auth.POST("login", h.Login)
+		auth := api.Group("auth/")
+		{
+			auth.POST("register", h.RegisterHandler)
+			// auth.POST("login", h.Login)
+		}
 	}
+
 	return r
 }
