@@ -40,8 +40,10 @@ type Config struct {
 		Database string `env:"POSTGRES_DB" env-required:"true"`
 	}
 	Redis struct {
-		Host string `env:"REDIS_HOST" env-required:"true"`
-		Port string `env:"REDIS_PORT" env-required:"true"`
+		Host   string `env:"REDIS_HOST" env-required:"true"`
+		Port   string `env:"REDIS_PORT" env-required:"true"`
+		Secret string `env:"REDIS_SECRET" env-required:"true"`
+		Size   int    `env:"REDIS_SIZE" env-required:"true"`
 	}
 }
 

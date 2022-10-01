@@ -11,8 +11,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
+
 	"github.com/todd-sudo/todo_system/internal/config"
 	database "github.com/todd-sudo/todo_system/internal/db/postgres"
 	"github.com/todd-sudo/todo_system/internal/db/redis"
@@ -41,16 +43,26 @@ func RunApplication() {
 	defer shutdown()
 
 	// connect to redis
-	rc, err := redis.NewRedisClient(
+	redisClient := redis.NewRedisClient(
 		ctx,
-		&redis.CredentialRedis{Host: cfg.Redis.Host, Port: cfg.Redis.Port},
+		&redis.CredentialRedis{
+			Host:   cfg.Redis.Host,
+			Port:   cfg.Redis.Port,
+			Secret: cfg.Redis.Secret,
+			Size:   cfg.Redis.Size,
+		},
 		log,
-	).ConnectToRedis()
+	)
+	rc, err := redisClient.ConnectToRedis()
 	if err != nil {
 		log.Panicln("error connecting to redis %w", err)
 	}
-	log.Infoln("Connect redis successfully!")
 
+	redisStore, err := redisClient.GetStore()
+	if err != nil {
+		log.Panicln("error connecting to redis store %w", err)
+	}
+	log.Infoln("Connect redis successfully!")
 	// Init Gin Mode
 	gin.SetMode(cfg.AppConfig.GinMode)
 
@@ -76,6 +88,8 @@ func RunApplication() {
 
 	// New Gin router
 	router := gin.New()
+	router.Use(sessions.Sessions("", redisStore))
+	log.Infoln("Connect redis to GIN successfully")
 
 	// Gin Logs
 	enableGinLogs(true, router)

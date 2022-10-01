@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	redisGin "github.com/gin-contrib/sessions/redis"
 	"github.com/go-redis/redis/v9"
 	"github.com/todd-sudo/todo_system/pkg/logging"
 )
 
 type CredentialRedis struct {
-	Host string
-	Port string
+	Host   string
+	Port   string
+	Secret string
+	Size   int
 }
 
 type redisClient struct {
@@ -42,4 +45,18 @@ func (rc *redisClient) ConnectToRedis() (*redis.Client, error) {
 	}
 
 	return client, nil
+}
+
+func (rc *redisClient) GetStore() (redisGin.Store, error) {
+	store, err := redisGin.NewStore(
+		rc.cred.Size,
+		"tcp",
+		fmt.Sprintf("%s:%s", rc.cred.Host, rc.cred.Port),
+		"",
+		[]byte(rc.cred.Secret),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return store, nil
 }
