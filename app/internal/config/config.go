@@ -20,6 +20,7 @@ type Config struct {
 		}
 		Auth struct {
 			PasswordHashSalt string `env:"PASSWORD_HASH_SALT" env-required:"true"`
+			SessionName      string `env:"SESSION_NAME" env-required:"true"`
 		}
 		JWTToken struct {
 			AccessTokenPrivateKey  string `env:"ACCESS_TOKEN_PRIVATE_KEY" env-required:"true"`

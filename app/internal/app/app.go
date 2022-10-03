@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-contrib/sessions"
+	// "github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
 
@@ -58,11 +58,18 @@ func RunApplication() {
 		log.Panicln("error connecting to redis %w", err)
 	}
 
-	redisStore, err := redisClient.GetStore()
-	if err != nil {
-		log.Panicln("error connecting to redis store %w", err)
-	}
-	log.Infoln("Connect redis successfully!")
+	// Init redis store and cookies
+	// redisStore, err := redisClient.GetStore()
+	// if err != nil {
+	// 	log.Panicln("error connecting to redis store %w", err)
+	// }
+	// redisStore.Options(sessions.Options{
+	// 	Secure:   true,
+	// 	HttpOnly: true,
+	// 	SameSite: http.SameSiteStrictMode,
+	// })
+	// log.Infoln("Connect redis successfully!")
+
 	// Init Gin Mode
 	gin.SetMode(cfg.AppConfig.GinMode)
 
@@ -88,7 +95,7 @@ func RunApplication() {
 
 	// New Gin router
 	router := gin.New()
-	router.Use(sessions.Sessions("", redisStore))
+	// router.Use(sessions.Sessions(cfg.AppConfig.Auth.SessionName, redisStore))
 	log.Infoln("Connect redis to GIN successfully")
 
 	// Gin Logs
