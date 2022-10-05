@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,14 +11,16 @@ import (
 )
 
 type JWTToken interface {
-	CreateToken(ttl time.Duration, payload interface{}, privateKey string) (string, error)
-	ValidateToken(token string, publicKey string) (interface{}, error)
+	CreateToken(ttlMinutes time.Duration, payload string, jwtKey string) (string, error)
+	ValidateToken(token string, jwtKey string) (string, error)
 }
 
 type jwtToken struct {
 	log logging.Logger
 	cfg config.Config
 }
+
+// type tokenClaims
 
 func NewJWTToken(log logging.Logger, cfg config.Config) JWTToken {
 	return &jwtToken{
@@ -27,28 +29,22 @@ func NewJWTToken(log logging.Logger, cfg config.Config) JWTToken {
 	}
 }
 
+type tokenClaims struct {
+	jwt.StandardClaims
+	Username string `json:"username"`
+}
+
 // CreateToken - create JWT token
-func (j *jwtToken) CreateToken(ttl time.Duration, payload interface{}, privateKey string) (string, error) {
-	decodedPrivateKey, err := base64.StdEncoding.DecodeString(privateKey)
+func (j *jwtToken) CreateToken(ttlMinutes time.Duration, payload string, jwtKey string) (string, error) {
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(ttlMinutes * time.Minute).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+		Username: payload,
+	}).SignedString([]byte(jwtKey))
 	if err != nil {
-		return "", fmt.Errorf("could not decode key: %w", err)
-	}
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(decodedPrivateKey)
-	if err != nil {
-		return "", fmt.Errorf("create: parse key: %w", err)
-	}
-
-	now := time.Now().UTC()
-
-	claims := make(jwt.MapClaims)
-	claims["sub"] = payload
-	claims["exp"] = now.Add(ttl).Unix()
-	claims["iat"] = now.Unix()
-	claims["nbf"] = now.Unix()
-
-	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(key)
-
-	if err != nil {
+		j.log.Error(err)
 		return "", fmt.Errorf("create: sign token: %w", err)
 	}
 
@@ -56,33 +52,22 @@ func (j *jwtToken) CreateToken(ttl time.Duration, payload interface{}, privateKe
 }
 
 // ValidateToken - validate JWT token
-func (j *jwtToken) ValidateToken(token string, publicKey string) (interface{}, error) {
-	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey)
-	if err != nil {
-		return nil, fmt.Errorf("could not decode: %w", err)
-	}
-
-	key, err := jwt.ParseRSAPublicKeyFromPEM(decodedPublicKey)
-
-	if err != nil {
-		return "", fmt.Errorf("validate: parse key: %w", err)
-	}
-
-	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("unexpected method: %s", t.Header["alg"])
+func (j *jwtToken) ValidateToken(token string, jwtKey string) (string, error) {
+	accessToken, err := jwt.ParseWithClaims(token, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid signing method")
 		}
-		return key, nil
+
+		return []byte(jwtKey), nil
 	})
-
 	if err != nil {
-		return nil, fmt.Errorf("validate: %w", err)
+		return "", err
 	}
 
-	claims, ok := parsedToken.Claims.(jwt.MapClaims)
-	if !ok || !parsedToken.Valid {
-		return nil, fmt.Errorf("validate: invalid token")
+	claims, ok := accessToken.Claims.(*tokenClaims)
+	if !ok {
+		return "", errors.New("token claims are not of type *tokenClaims")
 	}
 
-	return claims["sub"], nil
+	return fmt.Sprintf("%v", claims.Username), nil
 }

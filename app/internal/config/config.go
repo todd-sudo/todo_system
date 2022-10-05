@@ -19,18 +19,15 @@ type Config struct {
 			Password string `env:"ADMIN_PWD" env-default:"admin"`
 		}
 		Auth struct {
-			PasswordHashSalt string `env:"PASSWORD_HASH_SALT" env-required:"true"`
-			SessionName      string `env:"SESSION_NAME" env-required:"true"`
+			SessionName string `env:"SESSION_NAME" env-required:"true"`
 		}
 		JWTToken struct {
-			AccessTokenPrivateKey  string `env:"ACCESS_TOKEN_PRIVATE_KEY" env-required:"true"`
-			AccessTokenPublicKey   string `env:"ACCESS_TOKEN_PUBLIC_KEY" env-required:"true"`
-			RefreshTokenPrivateKey string `env:"REFRESH_TOKEN_PRIVATE_KEY" env-required:"true"`
-			RefreshTokenPublicKey  string `env:"REFRESH_TOKEN_PUBLIC_KEY" env-required:"true"`
-			AccessTokenExpiresIn   int    `env:"ACCESS_TOKEN_EXPIRED_IN" env-required:"true"`
-			RefreshTokenExpiresIn  int    `env:"REFRESH_TOKEN_EXPIRED_IN" env-required:"true"`
-			AccessTokenMaxAge      int    `env:"ACCESS_TOKEN_MAXAGE" env-required:"true"`
-			RefreshTokenMaxAge     int    `env:"REFRESH_TOKEN_MAXAGE" env-required:"true"`
+			JwtAccessKey          string `env:"JWT_ACCESS_KEY" env-required:"true"`
+			JwtRefreshKey         string `env:"JWT_REFRESH_KEY" env-required:"true"`
+			AccessTokenExpiresIn  int    `env:"ACCESS_TOKEN_EXPIRED_IN" env-required:"true"`
+			RefreshTokenExpiresIn int    `env:"REFRESH_TOKEN_EXPIRED_IN" env-required:"true"`
+			AccessTokenMaxAge     int    `env:"ACCESS_TOKEN_MAXAGE" env-required:"true"`
+			RefreshTokenMaxAge    int    `env:"REFRESH_TOKEN_MAXAGE" env-required:"true"`
 		}
 	}
 	PostgreSQL struct {

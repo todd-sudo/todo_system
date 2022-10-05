@@ -1,10 +1,6 @@
 package entity
 
-import "gorm.io/gorm"
-
 type Folder struct {
-	gorm.Model
-
 	ID     uint64  `gorm:"primary_key:auto_increment" json:"id"`
 	Name   string  `gorm:"column:name" json:"name"`
 	UserID uint64  `gorm:"not null" json:"user_id"`

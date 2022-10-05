@@ -1,24 +1,26 @@
 package hasher
 
 import (
-	"crypto/sha1"
-	"fmt"
+	"github.com/todd-sudo/todo_system/pkg/logging"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type PasswordHasher interface {
-	Hash(password string) string
+	Hash(password string) (string, error)
 }
 
 type SHA1Hasher struct {
-	salt string
+	log logging.Logger
 }
 
-func NewSHA1Hasher(salt string) *SHA1Hasher {
-	return &SHA1Hasher{salt: salt}
+func NewSHA1Hasher(log logging.Logger) *SHA1Hasher {
+	return &SHA1Hasher{log: log}
 }
 
-func (h *SHA1Hasher) Hash(password string) string {
-	hash := sha1.New()
-	hash.Write([]byte(password))
-	return fmt.Sprintf("%x", hash.Sum([]byte(h.salt)))
+func (h *SHA1Hasher) Hash(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
 }

@@ -2,13 +2,9 @@ package entity
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
-
 	ID          uint64    `gorm:"primary_key:auto_increment" json:"id"`
 	Username    string    `gorm:"column:username;unique" json:"username"`
 	Password    string    `gorm:"column:password" json:"password"`

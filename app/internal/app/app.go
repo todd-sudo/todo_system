@@ -15,13 +15,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
 
+	jwtToken "github.com/todd-sudo/todo_system/internal/auth/jwt"
 	"github.com/todd-sudo/todo_system/internal/config"
 	database "github.com/todd-sudo/todo_system/internal/db/postgres"
 	"github.com/todd-sudo/todo_system/internal/db/redis"
 	apiV1 "github.com/todd-sudo/todo_system/internal/handler/v1/http"
 	"github.com/todd-sudo/todo_system/internal/hasher"
-	service_pg "github.com/todd-sudo/todo_system/internal/service/postgres"
+	servicePg "github.com/todd-sudo/todo_system/internal/service/postgres"
+	serviceRedis "github.com/todd-sudo/todo_system/internal/service/redis"
 	pgStorage "github.com/todd-sudo/todo_system/internal/storage/postgres"
+	redisStorage "github.com/todd-sudo/todo_system/internal/storage/redis"
 	"github.com/todd-sudo/todo_system/pkg/logging"
 	"github.com/todd-sudo/todo_system/pkg/server"
 )
@@ -80,17 +83,30 @@ func RunApplication() {
 	}
 	log.Infoln("Connect database successfully!")
 
+	// Connect JWT Token
+	jwt := jwtToken.NewJWTToken(log, *cfg)
+	log.Infoln("Connect JWT Token successfully!")
+
 	// Init hasher password
-	hasher := hasher.NewSHA1Hasher(cfg.AppConfig.Auth.PasswordHashSalt)
+	hasher := hasher.NewSHA1Hasher(log)
 	log.Infoln("Connect hasher successfully!")
 
-	storages := pgStorage.NewStorage(ctx, db, log)
-	log.Infoln("Connect repositories successfully!")
+	// Connect storages
+	storagePg := pgStorage.NewStorage(ctx, db, log)
+	log.Infoln("Connect storage postgres successfully!")
 
-	servicesPG := service_pg.NewService(ctx, *storages, log, hasher)
-	log.Infoln("Connect services successfully!")
+	storageRedis := redisStorage.NewJWTStorage(ctx, rc)
+	log.Infoln("Connect storage redis successfully!")
 
-	handlers := apiV1.NewHandler(log, *cfg, servicesPG)
+	// Connect services
+	servicesPG := servicePg.NewService(ctx, *storagePg, log, hasher)
+	log.Infoln("Connect service postgres successfully!")
+
+	servicesRedis := serviceRedis.NewRedisService(ctx, rc, storageRedis)
+	log.Infoln("Connect service redis successfully!")
+
+	// Connect handlers
+	handlers := apiV1.NewHandler(log, *cfg, servicesPG, jwt, servicesRedis)
 	log.Infoln("Connect services handlers!")
 
 	// New Gin router
