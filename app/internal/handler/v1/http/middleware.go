@@ -12,31 +12,68 @@ const (
 	userCtx             = "username"
 )
 
+// func (h *Handler) FetchAuth(ctx gin.Context) (bool, error) {
+// 	cookie, err := ctx.Cookie(usernameCookies)
+// 	if err != nil {
+// 		return false, err
+// 	}
+// 	token, err := h.redisService.GetRefreshToken(&ctx, cookie)
+// 	if err != nil || token == "" {
+// 		return false, err
+// 	}
+
+// 	return true, nil
+// }
+
 func (h *Handler) DeserializeUser(ctx *gin.Context) {
 	header := ctx.GetHeader(authorizationHeader)
 	if header == "" {
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "empty auth header"})
+		builErrorResponse(ctx, http.StatusUnauthorized, Response{
+			Status:  statusError,
+			Message: "empty auth header",
+			Data:    nil,
+		})
 		return
 	}
 
 	headerParts := strings.Split(header, " ")
 	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "invalid auth header"})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "invalid auth header",
+			Data:    nil,
+		})
 		return
 	}
 
 	if len(headerParts[1]) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "token is empty"})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "token is empty",
+			Data:    nil,
+		})
 		return
 	}
 
 	username, err := h.jwt.ValidateToken(headerParts[1], h.cfg.AppConfig.JWTToken.JwtAccessKey)
 	if err != nil {
-		h.log.Errorln(err)
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": err.Error()})
+		builErrorResponse(ctx, http.StatusUnauthorized, Response{
+			Status:  statusError,
+			Message: "unauthorize",
+			Data:    nil,
+		})
 		return
 	}
 
-	ctx.Set(userCtx, username)
+	// check refresh token in redis db
+	token, err := h.redisService.GetRefreshToken(ctx, username)
+	if err != nil || token == "" {
+		builErrorResponse(ctx, http.StatusUnauthorized, Response{
+			Status:  statusError,
+			Message: "unauthorize",
+			Data:    err,
+		})
+	}
 
+	ctx.Set(userCtx, username)
 }

@@ -14,6 +14,7 @@ type Config struct {
 	}
 	AppConfig struct {
 		GinMode   string `env:"GIN_MODE" env-default:"debug"`
+		Domain    string `env:"DOMAIN" env-default:"localhost"`
 		AdminUser struct {
 			Username string `env:"ADMIN_USERNAME" env-default:"admin"`
 			Password string `env:"ADMIN_PWD" env-default:"admin"`

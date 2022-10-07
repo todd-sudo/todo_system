@@ -17,41 +17,72 @@ type registerResponse struct {
 	Avatar    string    `json:"avatar"`
 }
 
+const (
+	refreshTokenCookie = "refresh_token"
+	usernameCookies    = "username"
+)
+
 func (h *Handler) RegisterHandler(ctx *gin.Context) {
 	var registerDTO dto.InsertUserDTO
 	if err := ctx.ShouldBind(&registerDTO); err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": "error", "error": err.Error()})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "register dto model error",
+			Data:    err,
+		})
 		return
 	}
 	user, err := h.service.InsertUser(ctx, &registerDTO)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": "error", "error": "register failed"})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "register failed error",
+			Data:    nil,
+		})
 		return
 	}
-	ctx.JSON(http.StatusOK, &registerResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		CreatedAt: user.CreatedAt,
-		Avatar:    user.Avatar,
+
+	builResponse(ctx, http.StatusCreated, Response{
+		Status:  statusOk,
+		Message: msgSuccessfully,
+		Data: &registerResponse{
+			ID:        user.ID,
+			Username:  user.Username,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			CreatedAt: user.CreatedAt,
+			Avatar:    user.Avatar,
+		},
 	})
 }
 
 func (h *Handler) Login(ctx *gin.Context) {
 	var loginDTO dto.InsertUserDTO
 	if err := ctx.ShouldBind(&loginDTO); err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": "error", "error": err.Error()})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "login dto model error",
+			Data:    err,
+		})
 		return
 	}
 
 	user, err := h.service.FindUserByUsername(ctx, loginDTO.Username)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": "error", "error": "you are not registred"})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "you are not registred",
+			Data:    nil,
+		})
 		return
 	}
+
 	if err := h.service.ComparePassword(user.Password, loginDTO.Password); err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"status": "error", "error": "wrong password"})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "wrong password",
+			Data:    nil,
+		})
 		return
 	}
 
@@ -62,8 +93,11 @@ func (h *Handler) Login(ctx *gin.Context) {
 		h.cfg.AppConfig.JWTToken.JwtAccessKey,
 	)
 	if err != nil {
-		h.log.Errorln(err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		builErrorResponse(ctx, http.StatusConflict, Response{
+			Status:  statusError,
+			Message: "create access_token error",
+			Data:    nil,
+		})
 		return
 	}
 
@@ -73,53 +107,136 @@ func (h *Handler) Login(ctx *gin.Context) {
 		h.cfg.AppConfig.JWTToken.JwtRefreshKey,
 	)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		builErrorResponse(ctx, http.StatusConflict, Response{
+			Status:  statusError,
+			Message: "create refresh_token error",
+			Data:    nil,
+		})
 		return
 	}
 
-	ctx.SetCookie("refresh_token", refreshToken, h.cfg.AppConfig.JWTToken.RefreshTokenMaxAge*60, "/", "localhost", true, true)
+	// maxAge in seconds * 60 = minutes (60sec * 60sec = 3600sec = 60 minutes)
+	ctx.SetCookie(
+		refreshTokenCookie,
+		refreshToken,
+		h.cfg.AppConfig.JWTToken.RefreshTokenMaxAge*60,
+		"/",
+		h.cfg.AppConfig.Domain,
+		true,
+		true,
+	)
+	ctx.Set(userCtx, user.Username)
 
-	err = h.redisService.SetRefreshToken(ctx, user.Username, refreshToken, time.Duration(h.cfg.AppConfig.JWTToken.RefreshTokenMaxAge))
-	if err != nil {
+	if err := h.redisService.SetRefreshToken(
+		ctx,
+		user.Username,
+		refreshToken,
+		time.Duration(h.cfg.AppConfig.JWTToken.RefreshTokenMaxAge),
+	); err != nil {
 		h.log.Errorln(err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		builErrorResponse(ctx, http.StatusConflict, Response{
+			Status:  statusError,
+			Message: "set refresh token to redis db error",
+			Data:    err,
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": accessToken})
+	builResponse(ctx, http.StatusOK, Response{
+		Status:  statusOk,
+		Message: msgSuccessfully,
+		Data:    map[string]string{"access_token": accessToken},
+	})
 }
 
 func (h *Handler) RefreshAccessToken(ctx *gin.Context) {
-	cookie, err := ctx.Cookie("refresh_token")
+	cookie, err := ctx.Cookie(refreshTokenCookie)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": "could not refresh access token"})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "could not refresh access token",
+			Data:    err,
+		})
 		return
 	}
-	h.log.Infoln(cookie)
+
 	sub, err := h.jwt.ValidateToken(cookie, h.cfg.AppConfig.JWTToken.JwtRefreshKey)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": err.Error()})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "validate token error",
+			Data:    nil,
+		})
 		return
 	}
+
 	user, err := h.service.FindUserByUsername(ctx, sub)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": "the user belonging to this token no logger exists"})
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "find user by username error",
+			Data:    nil,
+		})
 		return
 	}
+
 	accessToken, err := h.jwt.CreateToken(
 		time.Duration(h.cfg.AppConfig.JWTToken.AccessTokenExpiresIn),
 		user.Username,
 		h.cfg.AppConfig.JWTToken.JwtAccessKey,
 	)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": err.Error()})
+		builErrorResponse(ctx, http.StatusConflict, Response{
+			Status:  statusError,
+			Message: "create access_token error",
+			Data:    nil,
+		})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": accessToken})
+
+	builResponse(ctx, http.StatusOK, Response{
+		Status:  statusOk,
+		Message: msgSuccessfully,
+		Data:    map[string]string{"access_token": accessToken},
+	})
 }
 
 func (h *Handler) Logout(ctx *gin.Context) {
-	ctx.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
+	refreshToken, err := ctx.Cookie(refreshTokenCookie)
+	if err != nil {
+		builErrorResponse(ctx, http.StatusBadRequest, Response{
+			Status:  statusError,
+			Message: "unauthorized",
+			Data:    "not cookies refresh_token",
+		})
+		return
+	}
 
-	ctx.JSON(http.StatusOK, gin.H{"status": "success"})
+	username, err := h.jwt.ValidateToken(refreshToken, h.cfg.AppConfig.JWTToken.JwtRefreshKey)
+	if err != nil {
+		builErrorResponse(ctx, http.StatusUnauthorized, Response{
+			Status:  statusError,
+			Message: "unauthorize",
+			Data:    nil,
+		})
+		return
+	}
+
+	deleted, err := h.redisService.DelRefreshToken(ctx, username)
+	if err != nil || deleted == 0 {
+		builErrorResponse(ctx, http.StatusUnauthorized, Response{
+			Status:  statusError,
+			Message: "unauthorized",
+			Data:    nil,
+		})
+		return
+	}
+
+	ctx.SetCookie(refreshTokenCookie, "", -1, "/", h.cfg.AppConfig.Domain, false, true)
+
+	builResponse(ctx, http.StatusOK, Response{
+		Status:  statusOk,
+		Message: msgSuccessfully,
+		Data:    nil,
+	})
 }

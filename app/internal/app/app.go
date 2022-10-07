@@ -75,7 +75,6 @@ func RunApplication() {
 
 	// Init Gin Mode
 	gin.SetMode(cfg.AppConfig.GinMode)
-
 	// Init Database
 	db, err := database.NewPostgresDB(cfg, &log)
 	if err != nil {

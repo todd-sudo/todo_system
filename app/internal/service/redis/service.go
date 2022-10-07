@@ -9,8 +9,9 @@ import (
 )
 
 type RedisService interface {
-	SetRefreshToken(ctx context.Context, userID string, token string, expiresIn time.Duration) error
-	GetRefreshToken(ctx context.Context, userID string) (string, error)
+	SetRefreshToken(ctx context.Context, username string, token string, expiresIn time.Duration) error
+	GetRefreshToken(ctx context.Context, username string) (string, error)
+	DelRefreshToken(ctx context.Context, username string) (int64, error)
 }
 
 type redisService struct {
@@ -27,17 +28,25 @@ func NewRedisService(ctx context.Context, rc *redis.Client, jwtStorage jwtStorag
 	}
 }
 
-func (s *redisService) SetRefreshToken(ctx context.Context, userID string, token string, expiresIn time.Duration) error {
-	if err := s.jwtStorage.SetRefreshToken(ctx, userID, token, expiresIn); err != nil {
+func (s *redisService) SetRefreshToken(ctx context.Context, username string, token string, expiresIn time.Duration) error {
+	if err := s.jwtStorage.SetRefreshToken(ctx, username, token, expiresIn); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *redisService) GetRefreshToken(ctx context.Context, userID string) (string, error) {
-	token, err := s.jwtStorage.GetRefreshToken(ctx, userID)
+func (s *redisService) GetRefreshToken(ctx context.Context, username string) (string, error) {
+	token, err := s.jwtStorage.GetRefreshToken(ctx, username)
 	if err != nil {
 		return "", err
 	}
 	return token, nil
+}
+
+func (s *redisService) DelRefreshToken(ctx context.Context, username string) (int64, error) {
+	deleted, err := s.jwtStorage.DelRefreshToken(ctx, username)
+	if err != nil {
+		return 0, err
+	}
+	return deleted, nil
 }

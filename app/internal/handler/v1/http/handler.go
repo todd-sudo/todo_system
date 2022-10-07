@@ -41,7 +41,7 @@ func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
 		{
 			auth.POST("register", h.RegisterHandler)
 			auth.POST("login", h.Login)
-			auth.POST("refresh", h.RefreshAccessToken)
+			auth.GET("refresh", h.RefreshAccessToken)
 			auth.GET("logout", h.Logout)
 			auth.GET("test", h.DeserializeUser, h.Test)
 		}
@@ -51,5 +51,13 @@ func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
 }
 
 func (h *Handler) Test(ctx *gin.Context) {
-	ctx.JSON(200, "qwerty")
+	// isAuth, err := h.FetchAuth(*ctx)
+	// if !isAuth || err != nil {
+	// 	builErrorResponse(ctx, http.StatusBadRequest, Response{
+	// 		Status:  statusError,
+	// 		Message: "unauthorized",
+	// 		Data:    "not cookies username",
+	// 	})
+	// }
+	ctx.JSON(200, "qwertty")
 }
