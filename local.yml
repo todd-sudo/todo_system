@@ -10,16 +10,18 @@ services:
     depends_on:
       - postgres
       - redis
-    # networks:
-    #   - todo_network
+    networks:
+      - todo_network
     container_name: backend
+    # volumes:
+    #   - ./app/:/app
     build:
       context: .
       dockerfile: ./compose/go/Dockerfile
-    volumes:
-      - ./app/
+    # volumes:
+    #   - .:/app
 
-    command: ["/app/bin/app"]
+    command: ["/app/app/bin/app"]
 
   redis:
     # build:
@@ -30,8 +32,8 @@ services:
       - ./.envs/.local/.app
     ports:
       - "6379:6379"
-    # networks:
-    #   - todo_network
+    networks:
+      - todo_network
 
   redis-commander:
     container_name: redis-commander
@@ -42,8 +44,8 @@ services:
       - ./.envs/.local/.app
     ports:
       - "8081:8081"
-    # networks:
-    #   - todo_network
+    networks:
+      - todo_network
 
   postgres:
     build:
@@ -59,8 +61,8 @@ services:
       - production_postgres_data_backups:/backups:z
     env_file:
       - ./.envs/.local/.app
-    # networks:
-    #   - todo_network
+    networks:
+      - todo_network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -72,14 +74,14 @@ services:
       - ./.envs/.local/.app
     volumes:
       - pgadmin-data:/var/lib/pgadmin
-    # networks:
-    #   - todo_network
+    networks:
+      - todo_network
 
 volumes:
   production_postgres_data: {}
   production_postgres_data_backups: {}
   pgadmin-data: {}
-  # backend_logs: {}
+  # backend_volume: {}
 
-# networks:
-#   todo_network:
+networks:
+  todo_network:

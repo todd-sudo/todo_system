@@ -1,3 +1,3 @@
 
 build: 
-	go build -o ./bin/app cmd/main/main.go
+	cd app/ && go build -o ./bin/app cmd/main/main.go
