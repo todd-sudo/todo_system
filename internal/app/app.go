@@ -73,8 +73,6 @@ func RunApplication() {
 	// })
 	// log.Infoln("Connect redis successfully!")
 
-	// Init Gin Mode
-	gin.SetMode(cfg.AppConfig.GinMode)
 	// Init Database
 	db, err := database.NewPostgresDB(cfg, &log)
 	if err != nil {
@@ -110,11 +108,13 @@ func RunApplication() {
 
 	// New Gin router
 	router := gin.New()
+	// Init Gin Mode
+	gin.SetMode(cfg.AppConfig.GinMode)
 	// router.Use(sessions.Sessions(cfg.AppConfig.Auth.SessionName, redisStore))
-	log.Infoln("Connect redis to GIN successfully")
+	// log.Infoln("Connect redis to GIN successfully")
 
 	// Gin Logs
-	enableGinLogs(true, router)
+	enableGinLogs(router)
 
 	// Init Routes and CORS
 	handler := initRoutesAndCORS(router, handlers)
@@ -155,7 +155,7 @@ func initRoutesAndCORS(router *gin.Engine, handlers *apiV1.Handler) http.Handler
 		OptionsPassthrough: true,
 		ExposedHeaders:     []string{"Location", "Authorization", "Content-Disposition"},
 		// Enable Debugging for testing, consider disabling in production
-		Debug: false,
+		Debug: true,
 	})
 
 	handler := c.Handler(handlers.InitRoutes(router))
@@ -163,13 +163,11 @@ func initRoutesAndCORS(router *gin.Engine, handlers *apiV1.Handler) http.Handler
 }
 
 // enableGinLogs включает/отключает gin логи
-func enableGinLogs(enable bool, router *gin.Engine) {
-	if enable {
-		allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
-		if err != nil {
-			panic(fmt.Sprintf("[Message]: %s", err))
-		}
-		gin.DefaultWriter = io.MultiWriter(allFile)
-		router.Use(gin.Logger())
+func enableGinLogs(router *gin.Engine) {
+	allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
+	if err != nil {
+		panic(fmt.Sprintf("[Message]: %s", err))
 	}
+	gin.DefaultWriter = io.MultiWriter(allFile)
+	router.Use(gin.Logger())
 }
