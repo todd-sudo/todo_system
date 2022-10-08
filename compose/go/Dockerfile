@@ -7,10 +7,10 @@ RUN apk add build-base &&\
     make build
 
 
-RUN addgroup --system todd &&\
-    adduser --system --ingroup todd todd &&\
-    chown todd:todd .
+# RUN addgroup --system todd &&\
+#     adduser --system --ingroup todd todd &&\
+#     chown todd:todd .
 
-USER todd
+# USER todd
 
 CMD ["main"]
