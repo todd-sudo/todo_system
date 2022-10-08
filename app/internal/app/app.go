@@ -29,10 +29,10 @@ import (
 	"github.com/todd-sudo/todo_system/pkg/server"
 )
 
-func RunApplication() {
+func RunApplication(saveToFile bool) {
 
 	// Init Logger
-	logging.Init()
+	logging.Init(saveToFile)
 	log := logging.GetLogger()
 	log.Infoln("Connect logger successfully!")
 
@@ -114,7 +114,7 @@ func RunApplication() {
 	// log.Infoln("Connect redis to GIN successfully")
 
 	// Gin Logs
-	enableGinLogs(router)
+	enableGinLogs(saveToFile, router)
 
 	// Init Routes and CORS
 	handler := initRoutesAndCORS(router, handlers)
@@ -163,11 +163,14 @@ func initRoutesAndCORS(router *gin.Engine, handlers *apiV1.Handler) http.Handler
 }
 
 // enableGinLogs включает/отключает gin логи
-func enableGinLogs(router *gin.Engine) {
-	allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
-	if err != nil {
-		panic(fmt.Sprintf("[Message]: %s", err))
+func enableGinLogs(saveToFile bool, router *gin.Engine) {
+	if saveToFile {
+		allFile, err := os.OpenFile("logs/gin.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
+		if err != nil {
+			panic(fmt.Sprintf("[Message]: %s", err))
+		}
+		gin.DefaultWriter = io.MultiWriter(allFile)
 	}
-	gin.DefaultWriter = io.MultiWriter(allFile)
+
 	router.Use(gin.Logger())
 }
