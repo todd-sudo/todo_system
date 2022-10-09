@@ -65,15 +65,5 @@ func (h *Handler) DeserializeUser(ctx *gin.Context) {
 		return
 	}
 
-	// check refresh token in redis db
-	token, err := h.redisService.GetRefreshToken(ctx, username)
-	if err != nil || token == "" {
-		builErrorResponse(ctx, http.StatusUnauthorized, Response{
-			Status:  statusError,
-			Message: "unauthorize",
-			Data:    err,
-		})
-	}
-
 	ctx.Set(userCtx, username)
 }

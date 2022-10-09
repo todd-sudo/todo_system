@@ -51,13 +51,5 @@ func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
 }
 
 func (h *Handler) Test(ctx *gin.Context) {
-	// isAuth, err := h.FetchAuth(*ctx)
-	// if !isAuth || err != nil {
-	// 	builErrorResponse(ctx, http.StatusBadRequest, Response{
-	// 		Status:  statusError,
-	// 		Message: "unauthorized",
-	// 		Data:    "not cookies username",
-	// 	})
-	// }
 	ctx.JSON(200, "qwertty")
 }

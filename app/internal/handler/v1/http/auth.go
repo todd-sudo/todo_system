@@ -87,8 +87,8 @@ func (h *Handler) Login(ctx *gin.Context) {
 	}
 
 	// Generate Tokens
-	accessToken, err := h.jwt.CreateToken(
-		time.Duration(h.cfg.AppConfig.JWTToken.AccessTokenExpiresIn),
+	accessToken, _, err := h.jwt.CreateToken(
+		time.Duration(h.cfg.AppConfig.JWTToken.AccessTokenExpiresIn*int(time.Minute)),
 		user.Username,
 		h.cfg.AppConfig.JWTToken.JwtAccessKey,
 	)
@@ -101,8 +101,8 @@ func (h *Handler) Login(ctx *gin.Context) {
 		return
 	}
 
-	refreshToken, err := h.jwt.CreateToken(
-		time.Duration(h.cfg.AppConfig.JWTToken.RefreshTokenExpiresIn),
+	refreshToken, refreshTokenID, err := h.jwt.CreateToken(
+		time.Duration(h.cfg.AppConfig.JWTToken.RefreshTokenExpiresIn*int(time.Minute)),
 		user.Username,
 		h.cfg.AppConfig.JWTToken.JwtRefreshKey,
 	)
@@ -118,7 +118,7 @@ func (h *Handler) Login(ctx *gin.Context) {
 	// maxAge in seconds * 60 = minutes (60sec * 60sec = 3600sec = 60 minutes)
 	ctx.SetCookie(
 		refreshTokenCookie,
-		refreshToken,
+		refreshTokenID,
 		h.cfg.AppConfig.JWTToken.RefreshTokenMaxAge*60,
 		"/",
 		h.cfg.AppConfig.Domain,
@@ -130,8 +130,9 @@ func (h *Handler) Login(ctx *gin.Context) {
 	if err := h.redisService.SetRefreshToken(
 		ctx,
 		user.Username,
+		refreshTokenID,
 		refreshToken,
-		time.Duration(h.cfg.AppConfig.JWTToken.RefreshTokenMaxAge),
+		time.Duration(h.cfg.AppConfig.JWTToken.RefreshTokenMaxAge*int(time.Minute)),
 	); err != nil {
 		h.log.Errorln(err)
 		builErrorResponse(ctx, http.StatusConflict, Response{
@@ -145,12 +146,12 @@ func (h *Handler) Login(ctx *gin.Context) {
 	builResponse(ctx, http.StatusOK, Response{
 		Status:  statusOk,
 		Message: msgSuccessfully,
-		Data:    map[string]string{"access_token": accessToken},
+		Data:    map[string]string{"access_token": accessToken, "refresh_token": refreshTokenID},
 	})
 }
 
 func (h *Handler) RefreshAccessToken(ctx *gin.Context) {
-	cookie, err := ctx.Cookie(refreshTokenCookie)
+	cookieRefreshTokenID, err := ctx.Cookie(refreshTokenCookie)
 	if err != nil {
 		builErrorResponse(ctx, http.StatusBadRequest, Response{
 			Status:  statusError,
@@ -160,29 +161,30 @@ func (h *Handler) RefreshAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	sub, err := h.jwt.ValidateToken(cookie, h.cfg.AppConfig.JWTToken.JwtRefreshKey)
+	// check refresh token in redis db
+	token, err := h.redisService.GetRefreshToken(ctx, cookieRefreshTokenID)
+	if err != nil || token == "" {
+		builErrorResponse(ctx, http.StatusUnauthorized, Response{
+			Status:  statusError,
+			Message: "unauthorize (not token in db)",
+			Data:    err,
+		})
+		return
+	}
+
+	sub, err := h.jwt.ValidateToken(token, h.cfg.AppConfig.JWTToken.JwtRefreshKey)
 	if err != nil {
 		builErrorResponse(ctx, http.StatusBadRequest, Response{
 			Status:  statusError,
 			Message: "validate token error",
-			Data:    nil,
+			Data:    err.Error(),
 		})
 		return
 	}
 
-	user, err := h.service.FindUserByUsername(ctx, sub)
-	if err != nil {
-		builErrorResponse(ctx, http.StatusBadRequest, Response{
-			Status:  statusError,
-			Message: "find user by username error",
-			Data:    nil,
-		})
-		return
-	}
-
-	accessToken, err := h.jwt.CreateToken(
+	accessToken, _, err := h.jwt.CreateToken(
 		time.Duration(h.cfg.AppConfig.JWTToken.AccessTokenExpiresIn),
-		user.Username,
+		sub,
 		h.cfg.AppConfig.JWTToken.JwtAccessKey,
 	)
 	if err != nil {
@@ -202,7 +204,8 @@ func (h *Handler) RefreshAccessToken(ctx *gin.Context) {
 }
 
 func (h *Handler) Logout(ctx *gin.Context) {
-	refreshToken, err := ctx.Cookie(refreshTokenCookie)
+	refreshTokenID, err := ctx.Cookie(refreshTokenCookie)
+
 	if err != nil {
 		builErrorResponse(ctx, http.StatusBadRequest, Response{
 			Status:  statusError,
@@ -212,17 +215,17 @@ func (h *Handler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	username, err := h.jwt.ValidateToken(refreshToken, h.cfg.AppConfig.JWTToken.JwtRefreshKey)
-	if err != nil {
+	token, err := h.redisService.GetRefreshToken(ctx, refreshTokenID)
+	if err != nil || token == "" {
 		builErrorResponse(ctx, http.StatusUnauthorized, Response{
 			Status:  statusError,
 			Message: "unauthorize",
-			Data:    nil,
+			Data:    err,
 		})
 		return
 	}
 
-	deleted, err := h.redisService.DelRefreshToken(ctx, username)
+	deleted, err := h.redisService.DelRefreshToken(ctx, refreshTokenID)
 	if err != nil || deleted == 0 {
 		builErrorResponse(ctx, http.StatusUnauthorized, Response{
 			Status:  statusError,
