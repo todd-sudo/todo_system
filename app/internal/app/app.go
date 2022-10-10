@@ -92,7 +92,7 @@ func RunApplication(saveToFile bool) {
 	storagePg := pgStorage.NewStorage(ctx, db, log)
 	log.Infoln("Connect storage postgres successfully!")
 
-	storageRedis := redisStorage.NewJWTStorage(ctx, rc)
+	storageRedis := redisStorage.NewJWTStorage(ctx, rc, *cfg)
 	log.Infoln("Connect storage redis successfully!")
 
 	// Connect services

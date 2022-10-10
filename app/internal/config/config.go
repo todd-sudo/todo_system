@@ -22,13 +22,15 @@ type Config struct {
 		Auth struct {
 			SessionName string `env:"SESSION_NAME" env-required:"true"`
 		}
-		JWTToken struct {
+		MaxLimitPage int `env:"MAX_LIMIT_PAGE" env-default:"50"`
+		JWTToken     struct {
 			JwtAccessKey          string `env:"JWT_ACCESS_KEY" env-required:"true"`
 			JwtRefreshKey         string `env:"JWT_REFRESH_KEY" env-required:"true"`
 			AccessTokenExpiresIn  int    `env:"ACCESS_TOKEN_EXPIRED_IN" env-required:"true"`
 			RefreshTokenExpiresIn int    `env:"REFRESH_TOKEN_EXPIRED_IN" env-required:"true"`
 			AccessTokenMaxAge     int    `env:"ACCESS_TOKEN_MAXAGE" env-required:"true"`
 			RefreshTokenMaxAge    int    `env:"REFRESH_TOKEN_MAXAGE" env-required:"true"`
+			MaxTokenKeys          int    `env:"MAX_TOKEN_KEYS" env-default:"5"`
 		}
 	}
 	PostgreSQL struct {

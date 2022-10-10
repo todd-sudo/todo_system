@@ -9,8 +9,8 @@ import (
 )
 
 type ItemStorage interface {
-	AllItemsByFolder(ctx context.Context, folderID int) ([]*entity.Item, error)
-	AllItems(ctx context.Context, username string) ([]*entity.Item, error)
+	AllItemsByFolder(ctx context.Context, folderID, limit, lastID int) ([]*entity.Item, error)
+	AllItems(ctx context.Context, username string, limit, lastID int) ([]*entity.Item, error)
 	InsertItem(ctx context.Context, item *entity.Item) (*entity.Item, error)
 	UpdateItem(ctx context.Context, item *entity.Item) (*entity.Item, error)
 	DeleteItem(ctx context.Context, itemID int) error
@@ -31,13 +31,12 @@ func NewItemStorage(ctx context.Context, db *gorm.DB, log logging.Logger) ItemSt
 }
 
 // AllItemsByFolder - get all items by folder
-func (db *itemStorage) AllItemsByFolder(ctx context.Context, folderID int) ([]*entity.Item, error) {
+func (db *itemStorage) AllItemsByFolder(ctx context.Context, folderID, limit, lastID int) ([]*entity.Item, error) {
 	tx := db.connection.WithContext(ctx)
 	var items []*entity.Item
-	if err := tx.Preload("Folder").Joins("Folder").Where(
-		`"id" = ?`,
-		folderID,
-	).Find(&items).Error; err != nil {
+	if err := tx.Where(
+		`folder_id = ? AND index >= ?`, folderID, lastID,
+	).Order("id ASC").Limit(limit).Find(&items).Error; err != nil {
 		db.log.Errorf("get all items by folder_id error %v", err.Error())
 		return nil, err
 	}
@@ -45,13 +44,13 @@ func (db *itemStorage) AllItemsByFolder(ctx context.Context, folderID int) ([]*e
 }
 
 // AllItems - get all items by username
-func (db *itemStorage) AllItems(ctx context.Context, username string) ([]*entity.Item, error) {
+func (db *itemStorage) AllItems(ctx context.Context, username string, limit, lastID int) ([]*entity.Item, error) {
 	tx := db.connection.WithContext(ctx)
 	var items []*entity.Item
 	if err := tx.Preload("User").Joins("User").Where(
 		`"username" = ?`,
 		username,
-	).Find(&items).Error; err != nil {
+	).Where(`index >= ?`, lastID).Limit(limit).Find(&items).Error; err != nil {
 		db.log.Errorf("get all items by username error %v", err.Error())
 		return nil, err
 	}

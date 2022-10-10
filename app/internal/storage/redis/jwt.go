@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v9"
+	"github.com/todd-sudo/todo_system/internal/config"
 )
 
 type JWTStorage interface {
@@ -17,9 +18,10 @@ type JWTStorage interface {
 type jwtStorage struct {
 	ctx context.Context
 	rc  *redis.Client
+	cfg config.Config
 }
 
-func NewJWTStorage(ctx context.Context, rc *redis.Client) JWTStorage {
+func NewJWTStorage(ctx context.Context, rc *redis.Client, cfg config.Config) JWTStorage {
 	return &jwtStorage{
 		ctx: ctx,
 		rc:  rc,
@@ -41,7 +43,7 @@ func (j *jwtStorage) SetRefreshToken(
 		return err
 	}
 
-	if len(keys) == 5 {
+	if len(keys) == j.cfg.AppConfig.JWTToken.MaxTokenKeys {
 		j.rc.Del(ctx, keys[len(keys)-1])
 	}
 	// if len(keys) > 5 {
