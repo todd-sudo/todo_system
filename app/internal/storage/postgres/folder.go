@@ -10,8 +10,7 @@ import (
 
 type FolderStorage interface {
 	AllFolders(ctx context.Context, username string) ([]*entity.Folder, error)
-	InsertFolder(ctx context.Context, folder *entity.Folder) (*entity.Folder, error)
-	UpdateFolder(ctx context.Context, folder *entity.Folder) (*entity.Folder, error)
+	InsertUpdateFolder(ctx context.Context, folder *entity.Folder) (*entity.Folder, error)
 	DeleteFolder(ctx context.Context, folderID int) error
 }
 
@@ -43,20 +42,10 @@ func (db *folderStorage) AllFolders(ctx context.Context, username string) ([]*en
 }
 
 // InsertFolder - insert folder in db
-func (db *folderStorage) InsertFolder(ctx context.Context, folder *entity.Folder) (*entity.Folder, error) {
+func (db *folderStorage) InsertUpdateFolder(ctx context.Context, folder *entity.Folder) (*entity.Folder, error) {
 	tx := db.connection.WithContext(ctx)
 	if err := tx.Save(&folder).Error; err != nil {
 		db.log.Errorf("insert folder error %v", err.Error())
-		return nil, err
-	}
-	return folder, nil
-}
-
-// UpdateFolder - update folder in db
-func (db *folderStorage) UpdateFolder(ctx context.Context, folder *entity.Folder) (*entity.Folder, error) {
-	tx := db.connection.WithContext(ctx)
-	if err := tx.Save(&folder).Error; err != nil {
-		db.log.Errorf("update folder error %v", err.Error())
 		return nil, err
 	}
 	return folder, nil

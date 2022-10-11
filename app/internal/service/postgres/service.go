@@ -11,10 +11,14 @@ import (
 
 type Service struct {
 	UserService
+	FolderService
+	ItemService
 }
 
 func NewService(ctx context.Context, storage postgres.Storage, log logging.Logger, hasher hasher.PasswordHasher) *Service {
 	return &Service{
-		UserService: NewUserService(ctx, log, &storage, hasher),
+		UserService:   NewUserService(ctx, log, &storage, hasher),
+		FolderService: NewFolderService(ctx, log, &storage),
+		ItemService:   NewItemService(ctx, log, &storage),
 	}
 }

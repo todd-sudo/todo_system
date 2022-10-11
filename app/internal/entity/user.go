@@ -10,7 +10,7 @@ type User struct {
 	Password    string    `gorm:"column:password" json:"password"`
 	FirstName   string    `gorm:"column:first_name" json:"first_name"`
 	LastName    string    `gorm:"column:last_name" json:"last_name"`
-	CreatedAt   time.Time `gorm:"column:create_at" json:"create_at"`
+	CreatedAt   time.Time `gorm:"column:created_at" json:"created_at"`
 	Avatar      string    `gorm:"column:avatar" json:"avatar"`
 	IsSuperuser bool      `gorm:"column:is_superuser;default:false" json:"is_superuser"`
 	IsStaff     bool      `gorm:"column:is_staff;default:false" json:"is_staff"`

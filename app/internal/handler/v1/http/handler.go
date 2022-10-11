@@ -37,13 +37,31 @@ func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
 
 	api := r.Group("api/")
 	{
+		api.GET("test", h.DeserializeUser, h.Test)
+
 		auth := api.Group("auth/")
 		{
 			auth.POST("register", h.RegisterHandler)
 			auth.POST("login", h.Login)
 			auth.GET("refresh", h.RefreshAccessToken)
 			auth.GET("logout", h.Logout)
-			auth.GET("test", h.DeserializeUser, h.Test)
+		}
+
+		folder := api.Group("folder/")
+		{
+			folder.POST("all")
+			folder.POST("create")
+			folder.PATCH("update")
+			folder.DELETE("delete")
+		}
+
+		item := api.Group("item/")
+		{
+			item.POST("all-folder")
+			item.POST("all")
+			item.POST("create")
+			item.PATCH("update")
+			item.DELETE("delete")
 		}
 	}
 
@@ -51,5 +69,5 @@ func (h *Handler) InitRoutes(r *gin.Engine) *gin.Engine {
 }
 
 func (h *Handler) Test(ctx *gin.Context) {
-	ctx.JSON(200, "qwertty")
+	ctx.JSON(200, "qwerty")
 }
